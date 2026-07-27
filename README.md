@@ -1,15 +1,20 @@
+<div align="center">
+
 # 🎬 OCR-AI Studio (v1.0.0)
 
 **محرك تفريغ وتحويل الترجمات الصورية والنصية المتقدم برؤية الذكاء الاصطناعي**  
-*Advanced AI-Powered Subtitle Extraction & Vision OCR Engine (PGS / VobSub / SubRip → SRT / ASS / VTT / TXT)*
+*Advanced AI-Powered Subtitle Extraction & Vision OCR Engine*
+
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows-0078D6.svg)](https://www.microsoft.com/windows)
+[![Engine](https://img.shields.io/badge/AI_Engines-LM_Studio_%7C_Ollama-6366f1.svg)](https://lmstudio.ai/)
 
 ---
+
+### 📺 المعاينة والتجربة المباشرة (Visual Demo)
 
 ![OCR-AI Studio Demo](img/GIF.gif)
-
----
-
-## 📹 فيديو الشرح والاستخدام (Video Demo & Tutorial)
 
 [![OCR-AI Studio YouTube Video](https://img.youtube.com/vi/fekpXI--iec/maxresdefault.jpg)](https://youtu.be/fekpXI--iec)
 
@@ -17,37 +22,69 @@
 
 ---
 
+</div>
+
 ## 🌟 الميزات الرئيسية (Key Features)
 
-- ⚡ **الاستخراج الفوري للترجمات النصية:** كشف المسارات النصية (`SubRip SRT`, `ASS`) واستخراجها فورياً في أقل من ثانية دون استهلاك نموذج الذكاء الاصطناعي.
-- 🤖 **دعم متكامل لمحركات الذكاء الاصطناعي المحلية:** التبديل بنقرة واحدة بين **LM Studio** (`Port 1234`) و **Ollama** (`Port 11434`).
-- 👁️ **اكتشاف ذكي لموديلات الرؤية (Vision Input):** التعرف التلقائي وترتيب الموديلات التي تدعم الصور (مثل `Qwen2.5-VL`, `LLaVA`, `Llama-3.2-Vision`).
-- ⏸️ **توقف مؤقت واستئناف ذكي (Pause & Resume):** حفظ تلقائي للجلسات في مجلد `.cache` لتفادي فقدان أي بيانات، مع إمكانية المعاينة المباشرة لمسودة الترجمة أثناء التوقف.
-- 📄 **تصدير متعدد الصيغ:** دعم التصدير التلقائي لصيغ `SubRip (.srt)`, `WebVTT (.vtt)`, `Advanced SubStation Alpha (.ass)`, و `Plain Text (.txt)`.
-- 📋 **سجل عمليات متطور:** أزرار مخصصة لـ **نسخ السجل للحافظة**، **مسح السجل**، وتفعيل/إلغاء **التمرير التلقائي**.
-- ⚙️ **نافذة "حول التطبيق":** لعرض معلومات الاصدار وتفاصيل الرخصة والمحركات المدعومة.
+| الميزة | الوصف والتفاصيل |
+| :--- | :--- |
+| ⚡ **استخراج نصي فوري** | كشف المسارات النصية (`SubRip SRT`, `ASS`, `VTT`) واستخراجها في أقل من ثانية بدون استهلاك AI. |
+| 👁️ **كشف موديلات الرؤية** | التعرف التلقائي وترتيب الموديلات التي تدعم الصور (`Qwen2.5-VL`, `LLaVA`, `Llama-3.2-Vision`). |
+| 🤖 **تكامل المحركات المحلية** | دعم التبديل بنقرة واحدة بين **LM Studio** (`Port 1234`) و **Ollama** (`Port 11434`). |
+| ⏸️ **توقف مؤقت واستئناف** | حفظ تلقائي للجلسات في كاش `.cache` لمنع فقدان البيانات أثناء التوقف أو الإيقاف. |
+| 📄 **تصدير متعدد الصيغ** | دعم التصدير التلقائي لصيغ `SRT`, `WebVTT (.vtt)`, `ASS (.ass)`, و `TXT (.txt)`. |
+| 🛡️ **فحص الأخطاء المبكر** | تنبيه ذكي قبل المعالجة في حال نسيان تشغيل خادم LM Studio أو Ollama. |
 
 ---
 
-## 🚀 متطلبات التشغيل (Requirements)
+## 🤖 الموديلات الموصى بها (Recommended Vision Models)
 
-1. **نظام التشغيل:** Windows 10 / 11.
-2. **محرك الذكاء الاصطناعي المحلي:**
-   - [LM Studio](https://lmstudio.ai/) أو [Ollama](https://ollama.com/) (مثبت عليه نموذج رؤية مثل `qwen2.5-vl`, `llava`, `llama3.2-vision`).
-3. **FFmpeg:** مثبت ومضاف لـ System PATH (تلقائياً عبر الحزمة).
+> [!TIP]
+> للحصول على أفضل دقة في استخراج النصوص العربية والإنجليزي من الصور، نوصي بالموديلات التالية:
+
+* **`Qwen2.5-VL-7B-Instruct`** *(الخيار الأفضل والأدق عالمياً)*
+* **`Qwen2-VL-2B-Instruct`** *(الأسرع والأخف لكروت الشاشة المتوسطة)*
+* **`Llama-3.2-11B-Vision-Instruct`** *(موديل Meta الرسمي)*
+* **`Llava-v1.6-Vicuna-7B`** *(الموديل الكلاسيكي المستقر)*
 
 ---
 
-## 💻 طريقة التثبيت والتشغيل (Installation & Setup)
+## 💻 طريقة التثبيت والتشغيل (Quick Start & Installation)
 
-### التشغيل المباشر عبر البرامج التنفيذية:
-1. قم بتحميل وإطلاق البرنامج المستقل مباشرة من مجلد `dist/OCR-AI-Studio/OCR-AI-Studio.exe`.
-2. أو انقر مرتين على `run_app.bat` أو `main.pyw` لتشغيل الواجهة فوراً.
+### 1️⃣ التشغيل المباشر عبر السكربتات (1-Click Launchers):
+1. انقر مرتين على `setup_env.bat` لتثبيت البيئة الافتراضية والحزم المطلوبة تلقائياً.
+2. انقر مرتين على `run_app.bat` أو `main.pyw` لتشغيل الواجهة فوراً.
 
-### بناء ملف EXE مستقل للرفع:
-انقر مرتين على `build_exe.bat` ليتم تجميع التطبيق داخل مجلد `dist/OCR-AI-Studio/`.
+### 2️⃣ التشغيل عبر سطر الأوامر (Terminal):
+```bash
+# تثبيت المتطلبات
+pip install -r requirements.txt
+
+# تشغيل التطبيق
+python main.pyw
+```
+
+---
+
+## 🏛️ هيكل المشروع (Project Architecture)
+
+```
+OCR-AI-sub-mks/
+│
+├── 📁 core/                     # حزمة محركات الذكاء الاصطناعي وFFmpeg والـ OCR
+├── 📁 gui/                      # حزمة الواجهة الرسومية والتصميم (App + Styles)
+├── 📁 utils/                    # حزمة الإعدادات والإصدار (Config + Version)
+├── 📁 img/                      # الوسائط والصور التوضيحية (Demo GIF)
+│
+├── 📄 config.json               # ملف الإعدادات المحفوظة
+├── 🚀 main.py                   # مدخل النظام الرئيسي
+├── 🎬 main.pyw                  # مدخل التشغيل بدون نافذة أسود
+├── ⚡ run_app.bat               # سكربت التشغيل السريع
+├── 🛠️ setup_env.bat             # سكربت التثبيت والتهيئة
+└── 📜 README.md                 # التوثيق الشامل للمشروع
+```
 
 ---
 
 ## 📜 الترخيص (License)
-هذا المشروع مرخص بموجب رخصة **MIT License**.
+هذا المشروع مرخص بموجب رخصة **[MIT License](LICENSE)**.
