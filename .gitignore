@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+*.log
+
+# Intermediate Build artifacts
+build/
+
+# Session cache
+.cache/
+temp/
+tmp/
+*.sup
+*.srt.draft
+
+# OS
+.DS_Store
+Thumbs.db
