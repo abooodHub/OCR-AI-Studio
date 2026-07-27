@@ -9,6 +9,14 @@
 
 ---
 
+## 📹 فيديو الشرح والاستخدام (Video Demo & Tutorial)
+
+[![OCR-AI Studio YouTube Video](https://img.youtube.com/vi/fekpXI--iec/maxresdefault.jpg)](https://youtu.be/fekpXI--iec)
+
+▶ **[اضغط هنا لمشاهدة فيديو الشرح التفصيلي على YouTube](https://youtu.be/fekpXI--iec)**
+
+---
+
 ## 🌟 الميزات الرئيسية (Key Features)
 
 - ⚡ **الاستخراج الفوري للترجمات النصية:** كشف المسارات النصية (`SubRip SRT`, `ASS`) واستخراجها فورياً في أقل من ثانية دون استهلاك نموذج الذكاء الاصطناعي.

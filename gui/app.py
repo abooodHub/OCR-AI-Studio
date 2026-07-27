@@ -10,6 +10,7 @@ import tempfile
 import threading
 import time
 import tkinter as tk
+import webbrowser
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
@@ -155,7 +156,17 @@ class SubAIMasterPro:
         for f in feats:
             tk.Label(features_box, text=f, bg=C["card"], fg=C["text_dim"], font=("Segoe UI", 9), anchor="w").pack(fill="x", pady=2)
 
-        ttk.Button(container, text="إغلاق النافذة", command=win.destroy, width=14).pack(anchor="e")
+        actions_row = ttk.Frame(container, style="Panel.TFrame")
+        actions_row.pack(fill="x", pady=(4, 0))
+
+        ttk.Button(
+            actions_row,
+            text="▶ مشاهدة فيديو الشرح (YouTube)",
+            command=lambda: webbrowser.open("https://youtu.be/fekpXI--iec"),
+            width=28
+        ).pack(side="left")
+
+        ttk.Button(actions_row, text="إغلاق النافذة", command=win.destroy, width=14).pack(side="right")
 
     def _build_files_card(self, parent: ttk.Frame) -> None:
         lf = ttk.LabelFrame(parent, text="  📁  الملفات وصيغة التصدير ومسار الترجمة  ", padding=14)
