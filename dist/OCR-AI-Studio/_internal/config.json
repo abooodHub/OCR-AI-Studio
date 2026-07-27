@@ -1,7 +1,0 @@
-{
-  "lmstudio_url": "http://localhost:1234/v1",
-  "lmstudio_model": "qwen/qwen2.5-vl-7b",
-  "output_dir": "C:/Users/abood/OneDrive/Desktop",
-  "stream_idx": "2",
-  "export_format": "SRT"
-}
