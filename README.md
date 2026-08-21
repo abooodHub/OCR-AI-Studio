@@ -54,16 +54,6 @@ OCR-AI-sub-mks/
 └── run_app.bat             # تشغيل الواجهة على Windows
 ```
 
-لبناء ملف Windows EXE واحد:
-
-```powershell
-.\.venv\Scripts\python.exe -m PyInstaller packaging\OCR-AI-Studio.spec
-```
-
-يُنشأ الملف في `dist\OCR-AI-Studio.exe`. لا تُضمّن حزمة البناء الحالية FFmpeg تلقائيًا بسبب
-اختلاف تراخيص توزيعاته؛ يجب مراجعة [متطلبات FFmpeg القانونية](https://ffmpeg.org/legal.html)
-قبل نشر نسخة مرفقة به.
-
 ## ما يعمل في النسخة Alpha الحالية
 
 - واجهة PySide6 حديثة بثلاث شاشات: المشروع، محرك AI، والتشخيص.
