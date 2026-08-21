@@ -1,23 +1,22 @@
 """
-sub_parser.py — محلل ملفات .sub بجميع أنواعها
+Parsers for VobSub, MicroDVD, and SubViewer subtitle sources.
 يدعم:
   • VobSub  (.sub + .idx)  — ترجمة صور bitmap تحتاج OCR
   • MicroDVD (.sub)         — ترجمة نصية بأرقام إطارات
   • SubViewer (.sub)        — ترجمة نصية بتوقيتات زمنية
 """
 
-import os
 import re
 import struct
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
 from PIL import Image
-
 
 # ============================================================
 # Auto-detector: يحدد نوع ملف .sub
 # ============================================================
+
 
 def detect_sub_type(sub_path: str) -> str:
     """
@@ -46,7 +45,7 @@ def detect_sub_type(sub_path: str) -> str:
 
     # ── 3 & 4. Text-based formats ───────────────────────────────────────
     try:
-        with open(sub_path, "r", encoding="utf-8", errors="replace") as fh:
+        with open(sub_path, encoding="utf-8", errors="replace") as fh:
             head = fh.read(2048)
     except Exception:
         return "unknown"
@@ -68,6 +67,7 @@ def detect_sub_type(sub_path: str) -> str:
 # VobSub Parser
 # ============================================================
 
+
 class VobSubParser:
     """
     Parses VobSub (.idx + .sub) subtitle files.
@@ -76,18 +76,18 @@ class VobSubParser:
     """
 
     # MPEG-2 PS / private stream constants
-    PS_HEADER     = b"\x00\x00\x01\xba"
+    PS_HEADER = b"\x00\x00\x01\xba"
     PRIV_STREAM_1 = b"\x00\x00\x01\xbd"
 
     # DVD SPU control sequence commands (ECMA-267 / DVD spec)
     # Each control sequence block:  [delay:2][next_block_off:2][cmd...][0xFF]
-    SPU_CMD_FORCE_DISPLAY = 0x00   # force display (show subtitle)
-    SPU_CMD_STOP_DISPLAY  = 0x01   # stop display
-    SPU_CMD_PALETTE       = 0x03   # 2 bytes: palette indices
-    SPU_CMD_ALPHA         = 0x04   # 2 bytes: alpha values
-    SPU_CMD_COORDS        = 0x05   # 6 bytes: x1,x2,y1,y2
-    SPU_CMD_OFFSETS       = 0x06   # 4 bytes: top/bottom field offsets
-    SPU_CMD_END           = 0xFF   # end of this control sequence block
+    SPU_CMD_FORCE_DISPLAY = 0x00  # force display (show subtitle)
+    SPU_CMD_STOP_DISPLAY = 0x01  # stop display
+    SPU_CMD_PALETTE = 0x03  # 2 bytes: palette indices
+    SPU_CMD_ALPHA = 0x04  # 2 bytes: alpha values
+    SPU_CMD_COORDS = 0x05  # 6 bytes: x1,x2,y1,y2
+    SPU_CMD_OFFSETS = 0x06  # 4 bytes: top/bottom field offsets
+    SPU_CMD_END = 0xFF  # end of this control sequence block
 
     def __init__(self, sub_path: str) -> None:
         self.sub_path = sub_path
@@ -125,9 +125,7 @@ class VobSubParser:
     # MPEG-2 PS full scan (no .idx needed)
     # ----------------------------------------------------------
 
-    def _scan_mpeg_stream(
-        self, data: bytes
-    ) -> list[tuple[int, int, bytes]]:
+    def _scan_mpeg_stream(self, data: bytes) -> list[tuple[int, int, bytes]]:
         """
         Walk the raw MPEG-2 PS stream and collect every private_stream_1
         (0x000001BD) packet that carries a DVD SPU sub-stream (id 0x20-0x3F).
@@ -144,7 +142,7 @@ class VobSubParser:
 
         while i + 6 <= n:
             # Skip pack headers (00 00 01 BA)
-            if data[i:i+4] == b"\x00\x00\x01\xba":
+            if data[i : i + 4] == b"\x00\x00\x01\xba":
                 # Pack header: 14 bytes fixed + optional stuffing
                 if i + 14 > n:
                     break
@@ -153,24 +151,24 @@ class VobSubParser:
                 continue
 
             # Private stream 1 (00 00 01 BD)
-            if data[i:i+4] == b"\x00\x00\x01\xbd":
+            if data[i : i + 4] == b"\x00\x00\x01\xbd":
                 if i + 6 > n:
                     break
-                pkt_len   = struct.unpack(">H", data[i+4:i+6])[0]
-                pkt_end   = i + 6 + pkt_len
+                pkt_len = struct.unpack(">H", data[i + 4 : i + 6])[0]
+                pkt_end = i + 6 + pkt_len
                 if pkt_end > n:
                     break
 
-                pts_ms    = self._read_pts(data, i + 6)
+                pts_ms = self._read_pts(data, i + 6)
                 payload_s = i + 6 + self._pes_header_len(data, i + 6)
 
                 if payload_s < pkt_end:
-                    sub_id    = data[payload_s]          # 0x20 = first sub stream
-                    payload_s += 1                        # skip stream_id byte
+                    sub_id = data[payload_s]  # 0x20 = first sub stream
+                    payload_s += 1  # skip stream_id byte
 
                     if 0x20 <= sub_id <= 0x3F and payload_s < pkt_end:
                         chunk = data[payload_s:pkt_end]
-                        sid   = sub_id & 0x1F            # logical track 0–31
+                        sid = sub_id & 0x1F  # logical track 0–31
 
                         if sid not in pending:
                             pending[sid] = (pts_ms, bytearray(chunk))
@@ -183,7 +181,7 @@ class VobSubParser:
                             spu_size = struct.unpack(">H", bytes(acc[:2]))[0]
                             if len(acc) >= spu_size:
                                 s_ms = pending[sid][0]
-                                spu  = bytes(acc[:spu_size])
+                                spu = bytes(acc[:spu_size])
                                 end_ms = s_ms + self._spu_duration_ms(spu)
                                 results.append((s_ms, end_ms, spu))
                                 del pending[sid]
@@ -191,10 +189,10 @@ class VobSubParser:
                 i = pkt_end
                 continue
 
-            i += 1   # advance byte by byte until next sync
+            i += 1  # advance byte by byte until next sync
 
         # Flush any incomplete trailing SPU packets
-        for sid, (s_ms, acc) in pending.items():
+        for _sid, (s_ms, acc) in pending.items():
             if len(acc) >= 4:
                 end_ms = s_ms + 3_000
                 results.append((s_ms, end_ms, bytes(acc)))
@@ -208,19 +206,19 @@ class VobSubParser:
         if pes_start + 3 >= len(data):
             return 0
         flags = data[pes_start + 1] if pes_start + 1 < len(data) else 0
-        if not (flags & 0x80):            # no PTS present
+        if not (flags & 0x80):  # no PTS present
             return 0
         p = pes_start + 3
         if p + 5 > len(data):
             return 0
         pts = (
-            ((data[p]     & 0x0E) << 29)
-            | (data[p+1]          << 22)
-            | ((data[p+2] & 0xFE) << 14)
-            | (data[p+3]          <<  7)
-            | ((data[p+4] & 0xFE) >>  1)
+            ((data[p] & 0x0E) << 29)
+            | (data[p + 1] << 22)
+            | ((data[p + 2] & 0xFE) << 14)
+            | (data[p + 3] << 7)
+            | ((data[p + 4] & 0xFE) >> 1)
         )
-        return pts // 90          # 90 kHz → ms
+        return pts // 90  # 90 kHz → ms
 
     @staticmethod
     def _pes_header_len(data: bytes, pes_start: int) -> int:
@@ -240,9 +238,9 @@ class VobSubParser:
         ctrl_off = struct.unpack(">H", spu[2:4])[0]
         if ctrl_off + 2 >= len(spu):
             return 3_000
-        delay_raw = struct.unpack(">H", spu[ctrl_off:ctrl_off+2])[0]
-        delay_ms  = (delay_raw >> 1) * (1024 // 90)    # MPEG 1/90000 s units
-        return max(delay_ms, 1_000)                     # at least 1 second
+        delay_raw = struct.unpack(">H", spu[ctrl_off : ctrl_off + 2])[0]
+        delay_ms = (delay_raw >> 1) * (1024 // 90)  # MPEG 1/90000 s units
+        return max(delay_ms, 1_000)  # at least 1 second
 
     # ----------------------------------------------------------
     # IDX reader — timestamps + byte offsets
@@ -255,7 +253,7 @@ class VobSubParser:
         """
         timestamps: list[tuple[int, int]] = []
         try:
-            with open(self.idx_path, "r", encoding="utf-8", errors="replace") as fh:
+            with open(self.idx_path, encoding="utf-8", errors="replace") as fh:
                 for line in fh:
                     m = re.match(
                         r"timestamp:\s*(\d{2}):(\d{2}):(\d{2}):(\d{3}),\s*filepos:\s*([0-9a-fA-F]+)",
@@ -277,7 +275,7 @@ class VobSubParser:
         The palette is stored as 24-bit RGB hex values.
         """
         try:
-            with open(self.idx_path, "r", encoding="utf-8", errors="replace") as fh:
+            with open(self.idx_path, encoding="utf-8", errors="replace") as fh:
                 for line in fh:
                     line = line.strip()
                     if line.startswith("palette:"):
@@ -344,29 +342,29 @@ class VobSubParser:
         """
         spu = bytearray()
         pos = offset
-        n   = len(data)
+        n = len(data)
 
         while pos + 14 <= n:
             # ── Pack header (00 00 01 BA) ─────────────────────────────
-            if data[pos:pos+4] != self.PS_HEADER:
+            if data[pos : pos + 4] != self.PS_HEADER:
                 break
             stuffing = data[pos + 13] & 0x07
             pos += 14 + stuffing
 
             # ── Private stream 1 (00 00 01 BD) ───────────────────────
-            if pos + 6 > n or data[pos:pos+4] != self.PRIV_STREAM_1:
+            if pos + 6 > n or data[pos : pos + 4] != self.PRIV_STREAM_1:
                 break
 
-            pkt_len = struct.unpack(">H", data[pos+4:pos+6])[0]
+            pkt_len = struct.unpack(">H", data[pos + 4 : pos + 6])[0]
             pkt_end = pos + 6 + pkt_len
             if pkt_end > n:
                 break
 
             # PES header: [flags_byte1][flags_byte2][hdr_len][...hdr_len bytes...]
-            pes_start  = pos + 6
+            pes_start = pos + 6
             if pes_start + 3 > n:
                 break
-            hdr_len    = data[pes_start + 2]
+            hdr_len = data[pes_start + 2]
             payload_pos = pes_start + 3 + hdr_len
 
             # First byte of payload = sub-stream id (0x20 for track 0)
@@ -422,17 +420,16 @@ class VobSubParser:
 
         # ── Default values ────────────────────────────────────────────
         # palette indices into idx_palette (or fallback 4-color map)
-        pal_idx   = {0: 0, 1: 1, 2: 2, 3: 3}
+        pal_idx = {0: 0, 1: 1, 2: 2, 3: 3}
         alpha_map = {0: 0, 1: 15, 2: 15, 3: 15}
         x1 = y1 = x2 = y2 = 0
-        top_field_offset = 4        # pixel data starts right after SPU header
+        top_field_offset = 4  # pixel data starts right after SPU header
         bot_field_offset = 0
-        found_coords  = False
-        found_offsets = False
+        found_coords = False
 
         # ── Walk control sequence blocks ──────────────────────────────
         block_pos = ctrl_offset
-        visited   = set()
+        visited = set()
 
         while block_pos < len(spu) - 3 and block_pos not in visited:
             visited.add(block_pos)
@@ -441,55 +438,63 @@ class VobSubParser:
             # delay and next_off — just read and advance
             if block_pos + 4 > len(spu):
                 break
-            next_block = struct.unpack(">H", spu[block_pos+2:block_pos+4])[0]
-            pos = block_pos + 4     # skip delay(2) + next_off(2)
+            next_block = struct.unpack(">H", spu[block_pos + 2 : block_pos + 4])[0]
+            pos = block_pos + 4  # skip delay(2) + next_off(2)
 
             while pos < len(spu):
-                cmd = spu[pos]; pos += 1
+                cmd = spu[pos]
+                pos += 1
 
                 if cmd == self.SPU_CMD_END:
                     break
 
-                elif cmd == self.SPU_CMD_FORCE_DISPLAY:   # 0x00 — no data
+                elif cmd == self.SPU_CMD_FORCE_DISPLAY:  # 0x00 — no data
                     pass
 
-                elif cmd == self.SPU_CMD_STOP_DISPLAY:    # 0x01 — no data
+                elif cmd == self.SPU_CMD_STOP_DISPLAY:  # 0x01 — no data
                     pass
 
-                elif cmd == self.SPU_CMD_PALETTE:         # 0x03 — 2 bytes
-                    if pos + 2 > len(spu): break
-                    b1 = spu[pos]; b2 = spu[pos+1]; pos += 2
+                elif cmd == self.SPU_CMD_PALETTE:  # 0x03 — 2 bytes
+                    if pos + 2 > len(spu):
+                        break
+                    b1 = spu[pos]
+                    b2 = spu[pos + 1]
+                    pos += 2
                     pal_idx[3] = (b1 >> 4) & 0xF
-                    pal_idx[2] =  b1       & 0xF
+                    pal_idx[2] = b1 & 0xF
                     pal_idx[1] = (b2 >> 4) & 0xF
-                    pal_idx[0] =  b2       & 0xF
+                    pal_idx[0] = b2 & 0xF
 
-                elif cmd == self.SPU_CMD_ALPHA:           # 0x04 — 2 bytes
-                    if pos + 2 > len(spu): break
-                    b1 = spu[pos]; b2 = spu[pos+1]; pos += 2
+                elif cmd == self.SPU_CMD_ALPHA:  # 0x04 — 2 bytes
+                    if pos + 2 > len(spu):
+                        break
+                    b1 = spu[pos]
+                    b2 = spu[pos + 1]
+                    pos += 2
                     alpha_map[3] = (b1 >> 4) & 0xF
-                    alpha_map[2] =  b1       & 0xF
+                    alpha_map[2] = b1 & 0xF
                     alpha_map[1] = (b2 >> 4) & 0xF
-                    alpha_map[0] =  b2       & 0xF
+                    alpha_map[0] = b2 & 0xF
 
-                elif cmd == self.SPU_CMD_COORDS:          # 0x05 — 6 bytes
-                    if pos + 6 > len(spu): break
-                    x1 = (spu[pos]   << 4) | (spu[pos+1] >> 4)
-                    x2 = ((spu[pos+1] & 0xF) << 8) | spu[pos+2]
-                    y1 = (spu[pos+3] << 4) | (spu[pos+4] >> 4)
-                    y2 = ((spu[pos+4] & 0xF) << 8) | spu[pos+5]
+                elif cmd == self.SPU_CMD_COORDS:  # 0x05 — 6 bytes
+                    if pos + 6 > len(spu):
+                        break
+                    x1 = (spu[pos] << 4) | (spu[pos + 1] >> 4)
+                    x2 = ((spu[pos + 1] & 0xF) << 8) | spu[pos + 2]
+                    y1 = (spu[pos + 3] << 4) | (spu[pos + 4] >> 4)
+                    y2 = ((spu[pos + 4] & 0xF) << 8) | spu[pos + 5]
                     pos += 6
                     found_coords = True
 
-                elif cmd == self.SPU_CMD_OFFSETS:         # 0x06 — 4 bytes
-                    if pos + 4 > len(spu): break
-                    top_field_offset = struct.unpack(">H", spu[pos:pos+2])[0]
-                    bot_field_offset = struct.unpack(">H", spu[pos+2:pos+4])[0]
+                elif cmd == self.SPU_CMD_OFFSETS:  # 0x06 — 4 bytes
+                    if pos + 4 > len(spu):
+                        break
+                    top_field_offset = struct.unpack(">H", spu[pos : pos + 2])[0]
+                    bot_field_offset = struct.unpack(">H", spu[pos + 2 : pos + 4])[0]
                     pos += 4
-                    found_offsets = True
 
                 else:
-                    break   # unknown command — stop parsing
+                    break  # unknown command — stop parsing
 
             # Follow chain if next_block points forward
             if next_block > block_pos:
@@ -518,8 +523,8 @@ class VobSubParser:
 
         # Fallback 4-color palette if no .idx palette available
         FALLBACK = [
-            (0,   0,   0),    # 0
-            (0,   0,   0),    # 1  (black outline)
+            (0, 0, 0),  # 0
+            (0, 0, 0),  # 1  (black outline)
             (255, 255, 255),  # 2  (white text)
             (128, 128, 128),  # 3  (gray)
         ]
@@ -567,7 +572,7 @@ class VobSubParser:
         pixels: list[int] = [0] * (width * height)
 
         def decode_field(field_off: int, rows: list[int]) -> None:
-            state = [field_off, True]   # [byte_pos, on_high_nibble]
+            state = [field_off, True]  # [byte_pos, on_high_nibble]
 
             def nib() -> int:
                 if state[0] >= len(data):
@@ -582,7 +587,7 @@ class VobSubParser:
                     return b & 0xF
 
             def byte_align() -> None:
-                if not state[1]:      # on low nibble → skip to next byte
+                if not state[1]:  # on low nibble → skip to next byte
                     state[1] = True
                     state[0] += 1
 
@@ -612,7 +617,7 @@ class VobSubParser:
                                 color = v4 & 3
 
                     if count == 0:
-                        count = width - x   # EOL: fill rest of line
+                        count = width - x  # EOL: fill rest of line
 
                     end_x = min(x + count, width)
                     if row < height:
@@ -621,21 +626,20 @@ class VobSubParser:
                             pixels[base + px] = color
                     x = end_x
 
-                byte_align()    # reset nibble alignment for next row
+                byte_align()  # reset nibble alignment for next row
 
         even_rows = list(range(0, height, 2))
-        odd_rows  = list(range(1, height, 2))
+        odd_rows = list(range(1, height, 2))
         decode_field(top_off, even_rows)
         decode_field(bot_off, odd_rows)
 
         return pixels
 
 
-
-
 # ============================================================
 # MicroDVD Parser  {frame}{frame}text
 # ============================================================
+
 
 class MicroDVDParser:
     """
@@ -648,12 +652,12 @@ class MicroDVDParser:
 
     def __init__(self, sub_path: str, fps: float | None = None) -> None:
         self.sub_path = sub_path
-        self.fps      = fps  # None = auto-detect from first line
+        self.fps = fps  # None = auto-detect from first line
 
     def parse(self) -> Generator[tuple[int, int, str], None, None]:
         """Yield (start_ms, end_ms, text) for each subtitle line."""
         lines = self._read_lines()
-        fps   = self.fps
+        fps = self.fps
 
         for raw_start, raw_end, text in lines:
             if fps is None:
@@ -667,8 +671,8 @@ class MicroDVDParser:
                 fps = self.DEFAULT_FPS
 
             start_ms = int(raw_start / fps * 1000)
-            end_ms   = int(raw_end   / fps * 1000)
-            clean    = re.sub(r"\{[^}]*\}", "", text).replace("|", "\n").strip()
+            end_ms = int(raw_end / fps * 1000)
+            clean = re.sub(r"\{[^}]*\}", "", text).replace("|", "\n").strip()
             if clean:
                 yield (start_ms, end_ms, clean)
 
@@ -676,7 +680,7 @@ class MicroDVDParser:
         results = []
         pattern = re.compile(r"^\{(\d+)\}\{(\d+)\}(.*)$")
         try:
-            with open(self.sub_path, "r", encoding="utf-8", errors="replace") as fh:
+            with open(self.sub_path, encoding="utf-8", errors="replace") as fh:
                 for line in fh:
                     m = pattern.match(line.strip())
                     if m:
@@ -690,6 +694,7 @@ class MicroDVDParser:
 # SubViewer Parser  HH:MM:SS.CC,HH:MM:SS.CC
 # ============================================================
 
+
 class SubViewerParser:
     """
     Parses SubViewer .sub files (text-based, timestamp pairs).
@@ -697,21 +702,19 @@ class SubViewerParser:
     """
 
     # Matches: 00:01:23.45,00:01:25.10
-    TS_PATTERN = re.compile(
-        r"^(\d{2}):(\d{2}):(\d{2})\.(\d{2}),(\d{2}):(\d{2}):(\d{2})\.(\d{2})\s*$"
-    )
+    TS_PATTERN = re.compile(r"^(\d{2}):(\d{2}):(\d{2})\.(\d{2}),(\d{2}):(\d{2}):(\d{2})\.(\d{2})\s*$")
 
     def parse_file(self, sub_path: str) -> Generator[tuple[int, int, str], None, None]:
         """Yield (start_ms, end_ms, text) for each subtitle block."""
         try:
-            with open(sub_path, "r", encoding="utf-8", errors="replace") as fh:
+            with open(sub_path, encoding="utf-8", errors="replace") as fh:
                 content = fh.read()
         except Exception:
             return
 
         blocks = content.split("\n\n")
         for block in blocks:
-            lines = [l.strip() for l in block.strip().splitlines() if l.strip()]
+            lines = [line.strip() for line in block.strip().splitlines() if line.strip()]
             if not lines:
                 continue
 
@@ -722,15 +725,15 @@ class SubViewerParser:
                 if self.TS_PATTERN.match(line):
                     ts_line = line
                 elif ts_line is not None:
-                    if not line.startswith("["):   # skip [INFORMATION] blocks
+                    if not line.startswith("["):  # skip [INFORMATION] blocks
                         text_lines.append(line)
 
             if ts_line and text_lines:
                 m = self.TS_PATTERN.match(ts_line)
                 if m:
                     start_ms = self._to_ms(int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4)))
-                    end_ms   = self._to_ms(int(m.group(5)), int(m.group(6)), int(m.group(7)), int(m.group(8)))
-                    text     = "\n".join(text_lines).replace("[br]", "\n")
+                    end_ms = self._to_ms(int(m.group(5)), int(m.group(6)), int(m.group(7)), int(m.group(8)))
+                    text = "\n".join(text_lines).replace("[br]", "\n")
                     yield (start_ms, end_ms, text)
 
     @staticmethod
@@ -742,6 +745,7 @@ class SubViewerParser:
 # ============================================================
 # Unified .sub entry point used by MediaEngine
 # ============================================================
+
 
 def parse_sub_file(
     sub_path: str,
@@ -768,6 +772,5 @@ def parse_sub_file(
 
     else:
         raise ValueError(
-            f"لم أتعرف على نوع ملف .sub: {sub_path}\n"
-            "الأنواع المدعومة: VobSub (+ .idx), MicroDVD, SubViewer"
+            f"لم أتعرف على نوع ملف .sub: {sub_path}\nالأنواع المدعومة: VobSub (+ .idx), MicroDVD, SubViewer"
         )

@@ -1,12 +1,13 @@
 @echo off
 chcp 65001 >nul
-title OCR-AI
+setlocal
 cd /d "%~dp0"
 
-if exist .venv\Scripts\activate.bat (
-    call .venv\Scripts\activate.bat
+if not exist ".venv\Scripts\pythonw.exe" (
+    echo [ERROR] Virtual environment not found. Run setup_env.bat first.
+    pause
+    exit /b 1
 )
 
-:: Launch main.pyw directly
-start "" main.pyw
-exit
+start "OCR-AI Studio" ".venv\Scripts\pythonw.exe" "main.py"
+exit /b 0

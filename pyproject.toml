@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ocr-ai-studio"
+version = "2.0.0a1"
+description = "Professional bitmap subtitle OCR for LM Studio, Ollama, and Unsloth"
+requires-python = ">=3.10"
+dependencies = [
+    "Pillow>=10.0",
+    "openai>=2.48.0",
+    "httpx>=0.28.1",
+    "PySide6>=6.8",
+]
+
+[project.optional-dependencies]
+dev = ["pyinstaller>=6.0", "pytest>=8.0", "ruff>=0.12"]
+
+[project.urls]
+Homepage = "https://github.com/abooodHub/OCR-AI-Studio"
+Repository = "https://github.com/abooodHub/OCR-AI-Studio"
+Issues = "https://github.com/abooodHub/OCR-AI-Studio/issues"
+
+[project.scripts]
+ocr-ai-studio = "ocr_ai_studio.ui.app:main"
+
+[tool.setuptools.packages.find]
+include = ["ocr_ai_studio*"]
+
+[tool.setuptools.package-data]
+ocr_ai_studio = ["assets/*.png", "assets/*.ico"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

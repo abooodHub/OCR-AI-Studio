@@ -1,9 +1,6 @@
-"""
-main.py — OCR-AI Command Line / Core Entry Point
-Executes the main graphical interface from the gui module.
-"""
+"""The single application entry point for OCR-AI Studio."""
 
-from gui.app import SubAIMasterPro, main
+from ocr_ai_studio.ui.app import main
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

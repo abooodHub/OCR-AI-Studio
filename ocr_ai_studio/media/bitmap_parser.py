@@ -1,5 +1,5 @@
 """
-media_engine.py — مهندس الميديا
+Bitmap subtitle parsers for PGS and VobSub sources.
 يتعامل مع FFmpeg/FFprobe لاستخراج مسار PGS،
 وفيه محلل PGS مدمج لتحويل البيانات إلى صور PIL + توقيتات.
 يدعم أيضاً ملفات .sub بجميع أنواعها (VobSub / MicroDVD / SubViewer).
@@ -10,14 +10,13 @@ import os
 import shutil
 import struct
 import subprocess
-from pathlib import Path
 
 from PIL import Image
-
 
 # ======================================================================
 # Media Engine
 # ======================================================================
+
 
 class MediaEngine:
     """High-level interface: probe, extract, and parse PGS subtitles."""
@@ -29,10 +28,14 @@ class MediaEngine:
     def probe_subtitle_streams(self, file_path: str) -> list[dict]:
         """Return a list of subtitle stream info dicts from ffprobe."""
         cmd = [
-            "ffprobe", "-v", "quiet",
-            "-print_format", "json",
+            "ffprobe",
+            "-v",
+            "quiet",
+            "-print_format",
+            "json",
             "-show_streams",
-            "-select_streams", "s",
+            "-select_streams",
+            "s",
             file_path,
         ]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
@@ -44,8 +47,11 @@ class MediaEngine:
     def get_duration_ms(self, file_path: str) -> int:
         """Return file duration in milliseconds (best effort)."""
         cmd = [
-            "ffprobe", "-v", "quiet",
-            "-print_format", "json",
+            "ffprobe",
+            "-v",
+            "quiet",
+            "-print_format",
+            "json",
             "-show_format",
             file_path,
         ]
@@ -66,10 +72,14 @@ class MediaEngine:
         into a raw .sup (PGS) binary file using FFmpeg.
         """
         cmd = [
-            "ffmpeg", "-y",
-            "-i", input_file,
-            "-map", f"0:s:{stream_idx}",
-            "-c", "copy",
+            "ffmpeg",
+            "-y",
+            "-i",
+            input_file,
+            "-map",
+            f"0:s:{stream_idx}",
+            "-c",
+            "copy",
             output_sup,
         ]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
@@ -84,9 +94,12 @@ class MediaEngine:
         direct to file without needing Vision OCR.
         """
         cmd = [
-            "ffmpeg", "-y",
-            "-i", input_file,
-            "-map", f"0:s:{stream_idx}",
+            "ffmpeg",
+            "-y",
+            "-i",
+            input_file,
+            "-map",
+            f"0:s:{stream_idx}",
             output_path,
         ]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
@@ -117,9 +130,9 @@ class MediaEngine:
         Returns: 'vobsub' | 'microdvd' | 'subviewer' | 'unknown'
         """
         try:
-            from .sub_parser import detect_sub_type
+            from .vobsub_parser import detect_sub_type
         except ImportError:
-            from sub_parser import detect_sub_type
+            from ocr_ai_studio.media.vobsub_parser import detect_sub_type
         return detect_sub_type(sub_path)
 
     def parse_sub(self, sub_path: str, fps: float | None = None):
@@ -132,9 +145,9 @@ class MediaEngine:
           - 'subviewer'→ generator yields (start_ms, end_ms, str)
         """
         try:
-            from .sub_parser import parse_sub_file
+            from .vobsub_parser import parse_sub_file
         except ImportError:
-            from sub_parser import parse_sub_file
+            from ocr_ai_studio.media.vobsub_parser import parse_sub_file
         return parse_sub_file(sub_path, fps=fps)
 
     # ------------------------------------------------------------------
@@ -150,6 +163,7 @@ class MediaEngine:
 # ======================================================================
 # PGS Parser — sيستخرج الصور والتوقيتات مباشرة من ملف .sup
 # ======================================================================
+
 
 class PGSParser:
     """
@@ -173,7 +187,7 @@ class PGSParser:
 
     # ODS sequence flags
     ODS_FIRST = 0x80
-    ODS_LAST  = 0x40
+    ODS_LAST = 0x40
 
     def __init__(self, sup_path: str) -> None:
         self.sup_path = sup_path
@@ -209,19 +223,21 @@ class PGSParser:
                 offset = next_pg
                 continue
 
-            pts_raw   = struct.unpack(">I", data[offset + 2  : offset + 6])[0]
-            seg_type  = data[offset + 10]
-            seg_size  = struct.unpack(">H", data[offset + 11 : offset + 13])[0]
-            end       = offset + 13 + seg_size
+            pts_raw = struct.unpack(">I", data[offset + 2 : offset + 6])[0]
+            seg_type = data[offset + 10]
+            seg_size = struct.unpack(">H", data[offset + 11 : offset + 13])[0]
+            end = offset + 13 + seg_size
 
             if end > length:
                 break
 
-            segments.append({
-                "pts_ms": pts_raw // 90,          # 90 kHz → ms
-                "type":   seg_type,
-                "data":   data[offset + 13 : end],
-            })
+            segments.append(
+                {
+                    "pts_ms": pts_raw // 90,  # 90 kHz → ms
+                    "type": seg_type,
+                    "data": data[offset + 13 : end],
+                }
+            )
             offset = end
 
         return segments
@@ -251,15 +267,15 @@ class PGSParser:
         and yield (start_ms, end_ms, img) pairs.
         """
         palettes: dict[int, dict[int, tuple]] = {}
-        objects:  dict[int, dict]             = {}
-        object_bufs: dict[int, dict]          = {}   # accumulate multi-seg ODS
+        objects: dict[int, dict] = {}
+        object_bufs: dict[int, dict] = {}  # accumulate multi-seg ODS
 
-        pending: tuple | None = None   # (start_ms, palette_id, comp_objs, objs_snap, pals_snap)
+        pending: tuple | None = None  # (start_ms, palette_id, comp_objs, objs_snap, pals_snap)
 
         for ds in display_sets:
-            pcs         = None
+            pcs = None
             ds_palettes: dict[int, dict] = {}
-            ds_objects:  dict[int, dict] = {}
+            ds_objects: dict[int, dict] = {}
 
             for seg in ds:
                 t = seg["type"]
@@ -281,7 +297,7 @@ class PGSParser:
             objects.update(ds_objects)
 
             comp_objs = pcs.get("composition_objects", [])
-            pts_ms    = pcs["pts_ms"]
+            pts_ms = pcs["pts_ms"]
 
             if not comp_objs:
                 # --- END event ---
@@ -298,7 +314,7 @@ class PGSParser:
                     pts_ms,
                     palette_id,
                     comp_objs,
-                    dict(objects),    # shallow copy (values are immutable)
+                    dict(objects),  # shallow copy (values are immutable)
                     dict(palettes),
                 )
 
@@ -319,7 +335,7 @@ class PGSParser:
         if len(d) < 11:
             return {"pts_ms": seg["pts_ms"], "composition_objects": []}
 
-        palette_id    = d[9]
+        palette_id = d[9]
         num_comp_objs = d[10]
 
         comp_objects = []
@@ -327,20 +343,20 @@ class PGSParser:
         for _ in range(num_comp_objs):
             if offset + 8 > len(d):
                 break
-            obj_id      = struct.unpack(">H", d[offset : offset + 2])[0]
+            obj_id = struct.unpack(">H", d[offset : offset + 2])[0]
             obj_cropped = d[offset + 3]
-            x           = struct.unpack(">H", d[offset + 4 : offset + 6])[0]
-            y           = struct.unpack(">H", d[offset + 6 : offset + 8])[0]
+            x = struct.unpack(">H", d[offset + 4 : offset + 6])[0]
+            y = struct.unpack(">H", d[offset + 6 : offset + 8])[0]
             offset += 8
 
-            if obj_cropped & 0x40:          # cropped flag
-                offset += 8                 # skip 4 crop fields × 2 bytes
+            if obj_cropped & 0x40:  # cropped flag
+                offset += 8  # skip 4 crop fields × 2 bytes
 
             comp_objects.append({"object_id": obj_id, "x": x, "y": y})
 
         return {
-            "pts_ms":              seg["pts_ms"],
-            "palette_id":          palette_id,
+            "pts_ms": seg["pts_ms"],
+            "palette_id": palette_id,
             "composition_objects": comp_objects,
         }
 
@@ -355,14 +371,14 @@ class PGSParser:
         offset = 2
 
         while offset + 4 < len(d):
-            idx   = d[offset]
-            Y     = d[offset + 1]
-            Cb    = d[offset + 2]
-            Cr    = d[offset + 3]
+            idx = d[offset]
+            Y = d[offset + 1]
+            Cb = d[offset + 2]
+            Cr = d[offset + 3]
             alpha = d[offset + 4]
 
             # BT.601 YCbCr → RGB
-            Y_f  = Y  - 16
+            Y_f = Y - 16
             Cb_f = Cb - 128
             Cr_f = Cr - 128
             r = int(max(0, min(255, 1.164 * Y_f + 1.596 * Cr_f)))
@@ -385,18 +401,18 @@ class PGSParser:
         if len(d) < 4:
             return 0, None
 
-        obj_id        = struct.unpack(">H", d[0:2])[0]
+        obj_id = struct.unpack(">H", d[0:2])[0]
         sequence_flag = d[3]
 
         is_first = bool(sequence_flag & self.ODS_FIRST)
-        is_last  = bool(sequence_flag & self.ODS_LAST)
+        is_last = bool(sequence_flag & self.ODS_LAST)
 
         if is_first:
             if len(d) < 11:
                 return obj_id, None
-            width  = struct.unpack(">H", d[7:9])[0]
+            width = struct.unpack(">H", d[7:9])[0]
             height = struct.unpack(">H", d[9:11])[0]
-            rle    = bytearray(d[11:])
+            rle = bytearray(d[11:])
             bufs[obj_id] = {"width": width, "height": height, "rle_data": rle}
         else:
             rle = d[4:]
@@ -406,8 +422,8 @@ class PGSParser:
         if is_last and obj_id in bufs:
             buf = bufs[obj_id]
             return obj_id, {
-                "width":    buf["width"],
-                "height":   buf["height"],
+                "width": buf["width"],
+                "height": buf["height"],
                 "rle_data": bytes(buf["rle_data"]),
             }
 
@@ -433,7 +449,8 @@ class PGSParser:
         n = len(rle)
 
         while i < n:
-            b = rle[i]; i += 1
+            b = rle[i]
+            i += 1
 
             if b != 0:
                 pixels.append(b)
@@ -441,7 +458,8 @@ class PGSParser:
 
             if i >= n:
                 break
-            b2 = rle[i]; i += 1
+            b2 = rle[i]
+            i += 1
 
             if b2 == 0:
                 # End of line — no explicit action needed
@@ -451,20 +469,24 @@ class PGSParser:
             elif b2 < 0x80:
                 if i >= n:
                     break
-                b3 = rle[i]; i += 1
+                b3 = rle[i]
+                i += 1
                 count = ((b2 & 0x3F) << 8) | b3
                 pixels.extend([0] * count)
             elif b2 < 0xC0:
                 count = b2 & 0x3F
                 if i >= n:
                     break
-                color = rle[i]; i += 1
+                color = rle[i]
+                i += 1
                 pixels.extend([color] * count)
             else:
                 if i + 1 >= n:
                     break
-                b3    = rle[i];     i += 1
-                color = rle[i];     i += 1
+                b3 = rle[i]
+                i += 1
+                color = rle[i]
+                i += 1
                 count = ((b2 & 0x3F) << 8) | b3
                 pixels.extend([color] * count)
 
@@ -477,9 +499,9 @@ class PGSParser:
     def _render_image(
         self,
         comp_objects: list[dict],
-        objects:      dict[int, dict],
-        palettes:     dict[int, dict],
-        palette_id:   int,
+        objects: dict[int, dict],
+        palettes: dict[int, dict],
+        palette_id: int,
     ) -> Image.Image | None:
         """Compose composition objects into a single RGBA PIL image."""
         if not comp_objects or not objects or not palettes:
@@ -519,7 +541,7 @@ class PGSParser:
             return rendered[0][2]
 
         # Multiple objects → composite onto canvas
-        max_x = max(x + img.width  for x, y, img in rendered)
+        max_x = max(x + img.width for x, y, img in rendered)
         max_y = max(y + img.height for x, y, img in rendered)
         canvas = Image.new("RGBA", (max_x, max_y), (0, 0, 0, 0))
         for x, y, img in rendered:

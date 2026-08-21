@@ -1,11 +1,12 @@
 """
-image_processor.py — معمل الصور
+Image preparation pipeline for PGS and VobSub OCR.
 يقتل الشفافية، يقص الفراغ، ويتحقق إن الصورة فيها نص حقيقي.
 يدعم مسار خاص لـ VobSub يضخّم الصورة ويعزز التباين قبل الـ OCR.
 """
 
 import io
-from PIL import Image, ImageChops, ImageEnhance, ImageFilter, ImageOps
+
+from PIL import Image, ImageChops, ImageEnhance, ImageFilter
 
 
 class ImageProcessor:
@@ -94,7 +95,7 @@ class ImageProcessor:
         long_side = max(img.width, img.height)
         if long_side < self.VOBSUB_MIN_LONG_SIDE:
             scale = self.VOBSUB_MIN_LONG_SIDE / long_side
-            new_w = max(int(img.width  * scale), 1)
+            new_w = max(int(img.width * scale), 1)
             new_h = max(int(img.height * scale), 1)
             img = img.resize((new_w, new_h), Image.LANCZOS)
 
@@ -154,7 +155,7 @@ class ImageProcessor:
 
         x1 = max(0, bbox[0] - self.CROP_PADDING)
         y1 = max(0, bbox[1] - self.CROP_PADDING)
-        x2 = min(img.width,  bbox[2] + self.CROP_PADDING)
+        x2 = min(img.width, bbox[2] + self.CROP_PADDING)
         y2 = min(img.height, bbox[3] + self.CROP_PADDING)
 
         return img.crop((x1, y1, x2, y2))
@@ -164,7 +165,7 @@ class ImageProcessor:
     # ------------------------------------------------------------------
 
     _WHITE_BG: tuple[int, int, int] = (255, 255, 255)
-    _WHITE_THRESHOLD: int = 30       # pixels this close to white = blank
+    _WHITE_THRESHOLD: int = 30  # pixels this close to white = blank
 
     def _kill_alpha_white(self, img: Image.Image) -> Image.Image:
         """Composite RGBA image onto a white background."""
@@ -179,7 +180,7 @@ class ImageProcessor:
     def _is_blank_white(self, img: Image.Image) -> bool:
         """True if the image is basically all white (no text)."""
         rgb = img.convert("RGB") if img.mode != "RGB" else img
-        bg  = Image.new("RGB", rgb.size, self._WHITE_BG)
+        bg = Image.new("RGB", rgb.size, self._WHITE_BG)
         diff = ImageChops.difference(rgb, bg)
         bbox = diff.getbbox()
         if bbox is None:
@@ -191,7 +192,7 @@ class ImageProcessor:
     def _auto_crop_white(self, img: Image.Image) -> Image.Image | None:
         """Crop to non-white bounding box with padding."""
         rgb = img.convert("RGB") if img.mode != "RGB" else img
-        bg  = Image.new("RGB", rgb.size, self._WHITE_BG)
+        bg = Image.new("RGB", rgb.size, self._WHITE_BG)
         diff = ImageChops.difference(rgb, bg)
         bbox = diff.getbbox()
 
@@ -200,7 +201,7 @@ class ImageProcessor:
 
         x1 = max(0, bbox[0] - self.CROP_PADDING)
         y1 = max(0, bbox[1] - self.CROP_PADDING)
-        x2 = min(img.width,  bbox[2] + self.CROP_PADDING)
+        x2 = min(img.width, bbox[2] + self.CROP_PADDING)
         y2 = min(img.height, bbox[3] + self.CROP_PADDING)
 
         return img.crop((x1, y1, x2, y2))

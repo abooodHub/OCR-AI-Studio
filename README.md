@@ -1,90 +1,89 @@
-<div align="center">
+# OCR-AI Studio
 
-# 🎬 OCR-AI Studio (v1.0.0)
+إعادة بناء احترافية لتطبيق تحويل ترجمات PGS وVobSub الصورية إلى نص باستخدام
+LM Studio أو Ollama أو Unsloth وموديلات Vision مثل `qwen/qwen2.5-vl-7b`.
 
-**محرك تفريغ وتحويل الترجمات الصورية والنصية المتقدم برؤية الذكاء الاصطناعي**  
-*Advanced AI-Powered Subtitle Extraction & Vision OCR Engine*
+## التشغيل
 
-[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Windows-0078D6.svg)](https://www.microsoft.com/windows)
-[![Engine](https://img.shields.io/badge/AI_Engines-LM_Studio_%7C_Ollama-6366f1.svg)](https://lmstudio.ai/)
-
----
-
-### 📺 المعاينة والتجربة المباشرة (Visual Demo)
-
-![OCR-AI Studio Demo](img/GIF.gif)
-
-[![OCR-AI Studio YouTube Video](https://img.youtube.com/vi/fekpXI--iec/maxresdefault.jpg)](https://youtu.be/fekpXI--iec)
-
-▶ **[اضغط هنا لمشاهدة فيديو الشرح التفصيلي على YouTube](https://youtu.be/fekpXI--iec)**
-
----
-
-</div>
-
-## 🌟 الميزات الرئيسية (Key Features)
-
-| الميزة | الوصف والتفاصيل |
-| :--- | :--- |
-| ⚡ **استخراج نصي فوري** | كشف المسارات النصية (`SubRip SRT`, `ASS`, `VTT`) واستخراجها في أقل من ثانية بدون استهلاك AI. |
-| 👁️ **كشف موديلات الرؤية** | التعرف التلقائي وترتيب الموديلات التي تدعم الصور (`Qwen2.5-VL`, `LLaVA`, `Llama-3.2-Vision`). |
-| 🤖 **تكامل المحركات المحلية** | دعم التبديل بنقرة واحدة بين **LM Studio** (`Port 1234`) و **Ollama** (`Port 11434`). |
-| ⏸️ **توقف مؤقت واستئناف** | حفظ تلقائي للجلسات في كاش `.cache` لمنع فقدان البيانات أثناء التوقف أو الإيقاف. |
-| 📄 **تصدير متعدد الصيغ** | دعم التصدير التلقائي لصيغ `SRT`, `WebVTT (.vtt)`, `ASS (.ass)`, و `TXT (.txt)`. |
-| 🛡️ **فحص الأخطاء المبكر** | تنبيه ذكي قبل المعالجة في حال نسيان تشغيل خادم LM Studio أو Ollama. |
-
----
-
-## 🤖 الموديلات الموصى بها (Recommended Vision Models)
-
-> [!TIP]
-> للحصول على أفضل دقة في استخراج النصوص العربية والإنجليزي من الصور، نوصي بالموديلات التالية:
-
-* **`Qwen2.5-VL-7B-Instruct`** *(الخيار الأفضل والأدق عالمياً)*
-* **`Qwen2-VL-2B-Instruct`** *(الأسرع والأخف لكروت الشاشة المتوسطة)*
-* **`Llama-3.2-11B-Vision-Instruct`** *(موديل Meta الرسمي)*
-* **`Llava-v1.6-Vicuna-7B`** *(الموديل الكلاسيكي المستقر)*
-
----
-
-## 💻 طريقة التثبيت والتشغيل (Quick Start & Installation)
-
-### 1️⃣ التشغيل المباشر عبر السكربتات (1-Click Launchers):
-1. انقر مرتين على `setup_env.bat` لتثبيت البيئة الافتراضية والحزم المطلوبة تلقائياً.
-2. انقر مرتين على `run_app.bat` أو `main.pyw` لتشغيل الواجهة فوراً.
-
-### 2️⃣ التشغيل عبر سطر الأوامر (Terminal):
-```bash
-# تثبيت المتطلبات
-pip install -r requirements.txt
-
-# تشغيل التطبيق
-python main.pyw
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe main.py
 ```
 
----
+على Windows يمكن تشغيل `run_app.bat` بعد تثبيت المتطلبات.
 
-## 🏛️ هيكل المشروع (Project Architecture)
+يمكن تنزيل نسخة Windows الجاهزة من صفحة
+[Releases](https://github.com/abooodHub/OCR-AI-Studio/releases). تحتاج النسخة Alpha الحالية إلى
+توفر `FFmpeg` و`FFprobe` في `PATH`؛ يعرض التطبيق حالتهما والمسار المكتشف من صفحة فحص النظام.
 
+## استخدام Unsloth
+
+شغّل Unsloth Studio وخادم الاستدلال المحلي، ثم اختر `Unsloth` من صفحة محرك الذكاء الاصطناعي:
+
+```powershell
+unsloth studio -p 8888
 ```
+
+العنوان الافتراضي داخل التطبيق هو `http://127.0.0.1:8888/v1`. أدخل مفتاح API الذي يعرضه
+Unsloth في الحقل المخفي؛ يبقى المفتاح في ذاكرة جلسة التطبيق ولا يُكتب في `settings.json`.
+يمكن بدلًا من ذلك تمريره عبر متغير البيئة `UNSLOTH_API_KEY`.
+
+يحتوي المشروع على نقطة تشغيل واحدة فقط هي `main.py`. يستخدم المشغل `pythonw.exe`
+لتشغيل الملف نفسه دون إظهار نافذة أوامر إضافية.
+
+## بنية المشروع
+
+```text
 OCR-AI-sub-mks/
-│
-├── 📁 core/                     # حزمة محركات الذكاء الاصطناعي وFFmpeg والـ OCR
-├── 📁 gui/                      # حزمة الواجهة الرسومية والتصميم (App + Styles)
-├── 📁 utils/                    # حزمة الإعدادات والإصدار (Config + Version)
-├── 📁 img/                      # الوسائط والصور التوضيحية (Demo GIF)
-│
-├── 📄 config.json               # ملف الإعدادات المحفوظة
-├── 🚀 main.py                   # مدخل النظام الرئيسي
-├── 🎬 main.pyw                  # مدخل التشغيل بدون نافذة أسود
-├── ⚡ run_app.bat               # سكربت التشغيل السريع
-├── 🛠️ setup_env.bat             # سكربت التثبيت والتهيئة
-└── 📜 README.md                 # التوثيق الشامل للمشروع
+├── main.py                 # نقطة التشغيل الوحيدة
+├── ocr_ai_studio/          # كود التطبيق
+│   ├── ai/                 # اتصال LM Studio وOllama
+│   ├── config/             # إعدادات المستخدم
+│   ├── domain/             # نماذج البيانات
+│   ├── exporters/          # SRT وVTT وASS وTXT
+│   ├── media/              # FFmpeg وPGS وVobSub
+│   ├── persistence/        # مشاريع SQLite والاستئناف
+│   ├── processing/         # خط المعالجة والصور
+│   └── ui/                 # واجهة PySide6 RTL
+├── packaging/              # إعداد بناء ملف EXE
+├── tests/                  # الاختبارات الآلية
+├── pyproject.toml          # تعريف الحزمة وأدوات الجودة
+├── requirements.txt        # اعتماديات التشغيل
+├── setup_env.bat           # إعداد البيئة
+└── run_app.bat             # تشغيل الواجهة على Windows
 ```
 
----
+لبناء ملف Windows EXE واحد:
 
-## 📜 الترخيص (License)
-هذا المشروع مرخص بموجب رخصة **[MIT License](LICENSE)**.
+```powershell
+.\.venv\Scripts\python.exe -m PyInstaller packaging\OCR-AI-Studio.spec
+```
+
+يُنشأ الملف في `dist\OCR-AI-Studio.exe`. لا تُضمّن حزمة البناء الحالية FFmpeg تلقائيًا بسبب
+اختلاف تراخيص توزيعاته؛ يجب مراجعة [متطلبات FFmpeg القانونية](https://ffmpeg.org/legal.html)
+قبل نشر نسخة مرفقة به.
+
+## ما يعمل في النسخة Alpha الحالية
+
+- واجهة PySide6 حديثة بثلاث شاشات: المشروع، محرك AI، والتشخيص.
+- كشف مسارات الترجمة داخل MKV/MKS بواسطة FFprobe.
+- دعم ملفات SUP المستقلة وVobSub من نوع IDX/SUB.
+- اختبار Vision فعلي للموديل بصورة تحتوي رمز تحقق.
+- معالجة PGS وVobSub عبر LM Studio أو Ollama أو خادم Unsloth المتوافق مع OpenAI.
+- دعم Unsloth افتراضيًا عبر `http://127.0.0.1:8888/v1` مع مفتاح API مؤقت لا يُحفظ على القرص.
+- اكتشاف الموديلات تلقائيًا من LM Studio وOllama وUnsloth والخوادم المتوافقة مع OpenAI.
+- عرض حالة تحميل الموديل ودعم Vision ودرجة quantization وحجم السياق عند توفرها من الخادم.
+- تخزين دائم في SQLite واستئناف آمن حسب بصمة الملف والمسار والموديل.
+- تمييز أخطاء API عن الصور الفارغة وعدم تصدير نتيجة ناقصة كأنها ناجحة.
+- تصدير ذري إلى SRT وVTT وASS وTXT.
+- إيقاف مؤقت وإلغاء آمن مع حفظ التقدم.
+
+## الاختبارات
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -v
+```
+
+قاعدة بيانات المشاريع وإعدادات المستخدم تحفظ افتراضيًا داخل:
+`%LOCALAPPDATA%\OCR-AI Studio`.
