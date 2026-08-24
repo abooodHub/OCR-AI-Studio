@@ -43,15 +43,39 @@ QLabel#navCaption {
     font-weight: 700;
     padding: 0 9px 5px 0;
 }
-QFrame#localCard {
-    background: #121c24;
-    border: 1px solid #1e3a3b;
-    border-radius: 12px;
+QFrame#engineStatusCard {
+    background: #111824;
+    border: 1px solid #2a3448;
+    border-radius: 13px;
 }
-QLabel#localTitle {
-    color: #56d7af;
+QFrame#engineStatusCard:hover { background: #151d2b; border-color: #4d5975; }
+QFrame#engineStatusCard[tone="success"] { background: #101d1d; border-color: #235047; }
+QFrame#engineStatusCard[tone="success"]:hover { background: #132422; border-color: #327060; }
+QFrame#engineStatusCard[tone="working"] { background: #17172b; border-color: #484183; }
+QFrame#engineStatusCard[tone="processing"] { background: #1c1732; border-color: #6654c7; }
+QFrame#engineStatusCard[tone="warning"] { background: #211b12; border-color: #594526; }
+QFrame#engineStatusCard[tone="error"] { background: #23151c; border-color: #5b2d3e; }
+QLabel#engineStatusTitle {
+    color: #aeb8ca;
     background: transparent;
-    font-weight: 700;
+    font-size: 9.5pt;
+    font-weight: 750;
+}
+QFrame#engineStatusCard[tone="success"] QLabel#engineStatusTitle { color: #55d9a9; }
+QFrame#engineStatusCard[tone="working"] QLabel#engineStatusTitle { color: #aaa4ff; }
+QFrame#engineStatusCard[tone="processing"] QLabel#engineStatusTitle { color: #b9afff; }
+QFrame#engineStatusCard[tone="warning"] QLabel#engineStatusTitle { color: #f2bd68; }
+QFrame#engineStatusCard[tone="error"] QLabel#engineStatusTitle { color: #ff7e96; }
+QLabel#engineStatusModel {
+    color: #f5f7fb;
+    background: transparent;
+    font-size: 10.5pt;
+    font-weight: 750;
+}
+QLabel#engineStatusDetail {
+    color: #7f8ba1;
+    background: transparent;
+    font-size: 8.5pt;
 }
 
 QLabel#pageTitle {
@@ -60,6 +84,7 @@ QLabel#pageTitle {
     font-weight: 800;
     background: transparent;
 }
+QFrame#pageHeader, QWidget#pageHeaderText { background: transparent; border: none; }
 QLabel#pageDescription {
     color: #8d97aa;
     font-size: 10pt;
@@ -97,11 +122,21 @@ QFrame#providerCard {
     border-radius: 13px;
 }
 QFrame#providerCard:hover { border-color: #4c4a80; background: #151b29; }
+QFrame#providerCard[selected="true"] {
+    background: #1d1b3b;
+    border: 1px solid #7468dc;
+}
+QFrame#providerCard[selected="true"]:hover { background: #242047; border-color: #8b80ed; }
 QLabel#providerName, QLabel#diagnosticName {
     color: #f3f5fa;
     background: transparent;
     font-size: 11.5pt;
     font-weight: 700;
+}
+QLabel#providerIcon {
+    background: #f3f5f8;
+    border: 1px solid #404b61;
+    border-radius: 10px;
 }
 QLabel#portBadge {
     color: #aaa4ff;
@@ -123,7 +158,48 @@ QLabel#modelStatus[tone="working"] { color: #9ea8ff; }
 QLabel#modelStatus[tone="success"] { color: #55d9a9; }
 QLabel#modelStatus[tone="error"] { color: #ff7d96; }
 
-QLabel#step, QLabel#stepActive {
+QFrame#runtimePanel {
+    background: #0d121c;
+    border: 1px solid #283247;
+    border-radius: 11px;
+}
+QFrame#runtimePanel[tone="success"] { background: #101d1d; border-color: #285449; }
+QFrame#runtimePanel[tone="working"] { background: #18172b; border-color: #4a4385; }
+QFrame#runtimePanel[tone="warning"] { background: #211b12; border-color: #5b4727; }
+QFrame#runtimePanel[tone="error"] { background: #24151c; border-color: #5d2d3e; }
+QLabel#runtimeStatusTitle {
+    background: transparent;
+    color: #f4f6fb;
+    font-size: 11pt;
+    font-weight: 750;
+}
+QLabel#runtimeStatusDetail {
+    background: transparent;
+    color: #929db0;
+    font-size: 9pt;
+}
+QLabel#runtimeExecutable {
+    background: transparent;
+    color: #69768c;
+    font-family: "Cascadia Mono", "Consolas";
+    font-size: 8pt;
+}
+QLabel#runtimeStateBadge {
+    color: #aeb7c7;
+    background: #1a2230;
+    border: 1px solid #354055;
+    border-radius: 10px;
+    padding: 7px 13px;
+    min-width: 66px;
+    font-size: 8.5pt;
+    font-weight: 750;
+}
+QLabel#runtimeStateBadge[tone="success"] { color: #56dbae; background: #102820; border-color: #255443; }
+QLabel#runtimeStateBadge[tone="working"] { color: #aaa4ff; background: #211f43; border-color: #403a78; }
+QLabel#runtimeStateBadge[tone="warning"] { color: #f1bd69; background: #2a2113; border-color: #604b2a; }
+QLabel#runtimeStateBadge[tone="error"] { color: #ff8299; background: #311823; border-color: #622e42; }
+
+QLabel#step, QLabel#stepActive, QLabel#stepDone {
     border-radius: 10px;
     padding: 8px 13px;
     font-size: 9pt;
@@ -131,6 +207,7 @@ QLabel#step, QLabel#stepActive {
 }
 QLabel#step { background: #10151f; border: 1px solid #222a39; color: #747f92; }
 QLabel#stepActive { background: #211e49; border: 1px solid #403a86; color: #c1bcff; }
+QLabel#stepDone { background: #10221e; border: 1px solid #245044; color: #63d8b2; }
 
 QPushButton {
     background: #20283a;
@@ -203,7 +280,7 @@ QTableWidget {
     outline: none;
 }
 QTableWidget::item { padding: 9px; border-bottom: 1px solid #1c2433; }
-QTableWidget::item:selected { border-left: 3px solid #7b6cef; }
+QTableWidget::item:selected { border-right: 3px solid #7b6cef; }
 QHeaderView::section {
     background: #171e2b;
     color: #9da8bb;
@@ -224,12 +301,39 @@ QLabel#statusReady[tone="working"] { color: #a7a1ff; }
 QLabel#statusReady[tone="success"] { color: #55d9a9; }
 QLabel#statusReady[tone="warning"] { color: #f2bd68; }
 QLabel#statusReady[tone="error"] { color: #ff7e96; }
+QLabel#progressMeta {
+    background: transparent;
+    color: #818da2;
+    font-size: 8.8pt;
+    font-weight: 600;
+}
+
+QCheckBox {
+    background: transparent;
+    color: #aab4c5;
+    spacing: 8px;
+    padding: 4px 0;
+    font-size: 9pt;
+}
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 1px solid #39445a;
+    background: #0c111a;
+}
+QCheckBox::indicator:hover { border-color: #7569dd; }
+QCheckBox::indicator:checked { background: #6c5ce7; border-color: #887cf0; }
 QProgressBar {
     background: #090e16;
     border: 1px solid #20293a;
     border-radius: 5px;
-    min-height: 9px;
-    max-height: 9px;
+    min-height: 18px;
+    max-height: 18px;
+    color: #e9e7ff;
+    text-align: center;
+    font-size: 8pt;
+    font-weight: 700;
 }
 QProgressBar::chunk { background: #7465ee; border-radius: 4px; }
 

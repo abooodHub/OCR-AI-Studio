@@ -16,7 +16,7 @@ def main() -> int:
     application = QApplication(sys.argv)
     application.setApplicationName("OCR-AI Studio")
     application.setOrganizationName("OCR-AI")
-    icon_path = Path(__file__).resolve().parents[1] / "assets" / "ocr-ai-studio.png"
+    icon_path = Path(__file__).resolve().parents[1] / "assets" / "app" / "ocr-ai-studio.png"
     if icon_path.is_file():
         application.setWindowIcon(QIcon(str(icon_path)))
     application.setLayoutDirection(Qt.LayoutDirection.RightToLeft)

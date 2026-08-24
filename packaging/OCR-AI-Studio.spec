@@ -3,15 +3,22 @@
 from pathlib import Path
 
 project_root = Path(SPECPATH).parent
-icon_png = project_root / "ocr_ai_studio" / "assets" / "ocr-ai-studio.png"
-icon_ico = project_root / "ocr_ai_studio" / "assets" / "ocr-ai-studio.ico"
+assets_dir = project_root / "ocr_ai_studio" / "assets"
+icon_ico = assets_dir / "app" / "ocr-ai-studio.ico"
 version_info = project_root / "packaging" / "windows_version_info.txt"
+asset_files = [
+    (
+        str(asset),
+        f"ocr_ai_studio/assets/{asset.parent.relative_to(assets_dir).as_posix()}",
+    )
+    for asset in assets_dir.rglob("*.png")
+]
 
 a = Analysis(
     [str(project_root / "main.py")],
     pathex=[str(project_root)],
     binaries=[],
-    datas=[(str(icon_png), "ocr_ai_studio/assets")],
+    datas=asset_files,
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

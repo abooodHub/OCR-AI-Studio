@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ocr-ai-studio"
-version = "2.0.0a1"
+version = "2.0.0a2"
 description = "Professional bitmap subtitle OCR for LM Studio, Ollama, and Unsloth"
 requires-python = ">=3.10"
 dependencies = [
@@ -29,7 +29,7 @@ ocr-ai-studio = "ocr_ai_studio.ui.app:main"
 include = ["ocr_ai_studio*"]
 
 [tool.setuptools.package-data]
-ocr_ai_studio = ["assets/*.png", "assets/*.ico"]
+ocr_ai_studio = ["assets/app/*.png", "assets/app/*.ico", "assets/providers/*.png"]
 
 [tool.ruff]
 line-length = 110

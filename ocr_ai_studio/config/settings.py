@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -26,6 +26,9 @@ class AppSettings:
     max_retries: int = 3
     request_timeout_seconds: int = 90
     api_key: str = ""
+    auto_start_engine: bool = True
+    stop_owned_engine_on_exit: bool = False
+    engine_executables: dict[str, str] = field(default_factory=dict)
 
     def validate(self) -> None:
         string_fields = {
@@ -44,6 +47,15 @@ class AppSettings:
             raise ValueError("max_retries must be an integer")
         if type(self.request_timeout_seconds) is not int:
             raise ValueError("request_timeout_seconds must be an integer")
+        if type(self.auto_start_engine) is not bool:
+            raise ValueError("auto_start_engine must be a boolean")
+        if type(self.stop_owned_engine_on_exit) is not bool:
+            raise ValueError("stop_owned_engine_on_exit must be a boolean")
+        if not isinstance(self.engine_executables, dict) or any(
+            not isinstance(key, str) or not isinstance(value, str)
+            for key, value in self.engine_executables.items()
+        ):
+            raise ValueError("engine_executables must map engine names to paths")
         if self.engine not in {item.value for item in EngineKind}:
             raise ValueError(f"Unsupported engine: {self.engine}")
         parsed_url = urlparse(self.base_url)

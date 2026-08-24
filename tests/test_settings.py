@@ -43,3 +43,23 @@ class SettingsTests(TestCase):
             loaded = store.load()
             self.assertEqual(loaded.engine, EngineKind.UNSLOTH.value)
             self.assertEqual(loaded.api_key, "")
+
+    def test_runtime_preferences_and_executable_paths_round_trip(self) -> None:
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "settings.json"
+            store = SettingsStore(path)
+            settings = AppSettings(
+                auto_start_engine=False,
+                stop_owned_engine_on_exit=True,
+                engine_executables={EngineKind.OLLAMA.value: r"C:\Tools\ollama.exe"},
+            )
+
+            store.save(settings)
+            loaded = store.load()
+
+            self.assertFalse(loaded.auto_start_engine)
+            self.assertTrue(loaded.stop_owned_engine_on_exit)
+            self.assertEqual(
+                loaded.engine_executables[EngineKind.OLLAMA.value],
+                r"C:\Tools\ollama.exe",
+            )
