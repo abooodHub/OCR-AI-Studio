@@ -1,1 +1,1 @@
-"""Automated tests for OCR-AI Studio V2."""
+"""Automated tests for OCR-AI Studio."""

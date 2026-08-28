@@ -44,22 +44,22 @@ class SettingsTests(TestCase):
             self.assertEqual(loaded.engine, EngineKind.UNSLOTH.value)
             self.assertEqual(loaded.api_key, "")
 
-    def test_runtime_preferences_and_executable_paths_round_trip(self) -> None:
+    def test_legacy_runtime_launch_preferences_are_ignored(self) -> None:
         with TemporaryDirectory() as directory:
             path = Path(directory) / "settings.json"
             store = SettingsStore(path)
-            settings = AppSettings(
-                auto_start_engine=False,
-                stop_owned_engine_on_exit=True,
-                engine_executables={EngineKind.OLLAMA.value: r"C:\Tools\ollama.exe"},
+            path.write_text(
+                """{
+  "model": "vision-model",
+  "auto_start_engine": true,
+  "stop_owned_engine_on_exit": true,
+  "engine_executables": {"ollama": "C:\\\\Tools\\\\ollama.exe"}
+}
+""",
+                encoding="utf-8",
             )
-
-            store.save(settings)
             loaded = store.load()
 
-            self.assertFalse(loaded.auto_start_engine)
-            self.assertTrue(loaded.stop_owned_engine_on_exit)
-            self.assertEqual(
-                loaded.engine_executables[EngineKind.OLLAMA.value],
-                r"C:\Tools\ollama.exe",
-            )
+            self.assertEqual(loaded.model, "vision-model")
+            self.assertFalse(hasattr(loaded, "auto_start_engine"))
+            self.assertFalse(hasattr(loaded, "engine_executables"))

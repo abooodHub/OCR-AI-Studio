@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import json
 import os
-import tempfile
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from urllib.parse import urlparse
+from uuid import uuid4
 
 from ocr_ai_studio.domain.models import EngineKind
 
@@ -26,9 +26,6 @@ class AppSettings:
     max_retries: int = 3
     request_timeout_seconds: int = 90
     api_key: str = ""
-    auto_start_engine: bool = True
-    stop_owned_engine_on_exit: bool = False
-    engine_executables: dict[str, str] = field(default_factory=dict)
 
     def validate(self) -> None:
         string_fields = {
@@ -47,15 +44,6 @@ class AppSettings:
             raise ValueError("max_retries must be an integer")
         if type(self.request_timeout_seconds) is not int:
             raise ValueError("request_timeout_seconds must be an integer")
-        if type(self.auto_start_engine) is not bool:
-            raise ValueError("auto_start_engine must be a boolean")
-        if type(self.stop_owned_engine_on_exit) is not bool:
-            raise ValueError("stop_owned_engine_on_exit must be a boolean")
-        if not isinstance(self.engine_executables, dict) or any(
-            not isinstance(key, str) or not isinstance(value, str)
-            for key, value in self.engine_executables.items()
-        ):
-            raise ValueError("engine_executables must map engine names to paths")
         if self.engine not in {item.value for item in EngineKind}:
             raise ValueError(f"Unsupported engine: {self.engine}")
         parsed_url = urlparse(self.base_url)
@@ -94,16 +82,17 @@ class SettingsStore:
     def save(self, settings: AppSettings) -> None:
         settings.validate()
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        handle, temp_name = tempfile.mkstemp(prefix="settings-", suffix=".tmp", dir=self.path.parent)
+        temp_path = self.path.with_name(
+            f".{self.path.name}.{os.getpid()}.{uuid4().hex}.tmp"
+        )
         try:
-            with os.fdopen(handle, "w", encoding="utf-8") as stream:
+            with temp_path.open("x", encoding="utf-8") as stream:
                 payload = asdict(settings)
                 payload.pop("api_key", None)
                 json.dump(payload, stream, ensure_ascii=False, indent=2)
                 stream.flush()
                 os.fsync(stream.fileno())
-            os.replace(temp_name, self.path)
+            os.replace(temp_path, self.path)
         finally:
-            temp_path = Path(temp_name)
             if temp_path.exists():
                 temp_path.unlink()

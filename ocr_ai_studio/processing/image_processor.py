@@ -6,7 +6,7 @@ Image preparation pipeline for PGS and VobSub OCR.
 
 import io
 
-from PIL import Image, ImageChops, ImageEnhance, ImageFilter
+from PIL import Image, ImageChops, ImageEnhance, ImageFilter, ImageOps, UnidentifiedImageError
 
 
 class ImageProcessor:
@@ -22,7 +22,12 @@ class ImageProcessor:
     CROP_PADDING: int = 6
 
     # JPEG encode quality sent to the AI (smaller = faster upload)
-    JPEG_QUALITY: int = 90
+    JPEG_QUALITY: int = 95
+
+    # Small subtitle glyphs are enlarged before Vision inference.
+    PGS_MIN_HEIGHT: int = 96
+    PGS_MIN_WIDTH: int = 720
+    PGS_MAX_SCALE: float = 3.0
 
     # Minimum meaningful frame size (pixels)
     MIN_SIZE: int = 8
@@ -60,9 +65,29 @@ class ImageProcessor:
         if self.is_blank(img):
             return None
 
+        img = self._enhance_pgs(img)
+
         buf = io.BytesIO()
-        img.convert("RGB").save(buf, format="JPEG", quality=self.JPEG_QUALITY, optimize=True)
+        img.convert("RGB").save(
+            buf,
+            format="JPEG",
+            quality=self.JPEG_QUALITY,
+            subsampling=0,
+            optimize=True,
+        )
         return buf.getvalue()
+
+    def _enhance_pgs(self, img: Image.Image) -> Image.Image:
+        height_scale = self.PGS_MIN_HEIGHT / max(1, img.height)
+        width_scale = self.PGS_MIN_WIDTH / max(1, img.width)
+        scale = min(self.PGS_MAX_SCALE, max(1.0, height_scale, width_scale))
+        if scale > 1.0:
+            img = img.resize(
+                (max(1, round(img.width * scale)), max(1, round(img.height * scale))),
+                Image.Resampling.LANCZOS,
+            )
+        img = ImageEnhance.Contrast(img).enhance(1.15)
+        return ImageEnhance.Sharpness(img).enhance(1.35)
 
     def prepare_vobsub(self, pil_img: Image.Image) -> bytes | None:
         """
@@ -107,6 +132,77 @@ class ImageProcessor:
         buf = io.BytesIO()
         img.convert("RGB").save(buf, format="JPEG", quality=95, optimize=True)
         return buf.getvalue()
+
+    def prepared_variants(self, pil_img: Image.Image, *, vobsub: bool = False) -> list[bytes]:
+        """Return distinct OCR inputs ordered from natural to increasingly aggressive.
+
+        The first item is the normal production image.  Extra variants are deliberately
+        generated only for retrying a frame; this keeps the common path fast while giving
+        faint, outlined, or low-resolution glyphs another chance without changing timing.
+        """
+        primary = self.prepare_vobsub(pil_img) if vobsub else self.prepare(pil_img)
+        if primary is None:
+            return []
+
+        variants = [primary]
+        try:
+            with Image.open(io.BytesIO(primary)) as decoded:
+                rgb = decoded.convert("RGB")
+                gray = ImageOps.grayscale(rgb)
+                contrasted = ImageOps.autocontrast(gray, cutoff=1)
+                contrasted = ImageEnhance.Contrast(contrasted).enhance(1.65)
+                contrasted = contrasted.filter(
+                    ImageFilter.UnsharpMask(radius=1.4, percent=180, threshold=2)
+                )
+                variants.append(self._encode_retry_image(contrasted))
+
+                threshold = self._otsu_threshold(contrasted)
+                binary = contrasted.point(lambda value: 255 if value >= threshold else 0, mode="1")
+                variants.append(self._encode_retry_image(binary.convert("L")))
+        except (OSError, UnidentifiedImageError):
+            # A custom processor/test double may already return an opaque model payload.
+            return variants
+
+        # JPEG compression can make two simple images identical. Avoid redundant model calls.
+        return list(dict.fromkeys(variants))
+
+    def _encode_retry_image(self, image: Image.Image) -> bytes:
+        buffer = io.BytesIO()
+        image.convert("RGB").save(
+            buffer,
+            format="JPEG",
+            quality=self.JPEG_QUALITY,
+            subsampling=0,
+            optimize=True,
+        )
+        return buffer.getvalue()
+
+    @staticmethod
+    def _otsu_threshold(image: Image.Image) -> int:
+        histogram = image.convert("L").histogram()
+        total = sum(histogram)
+        if total <= 0:
+            return 128
+        weighted_sum = sum(index * count for index, count in enumerate(histogram))
+        background_weight = 0
+        background_sum = 0
+        best_variance = -1.0
+        best_threshold = 128
+        for threshold, count in enumerate(histogram):
+            background_weight += count
+            if background_weight == 0:
+                continue
+            foreground_weight = total - background_weight
+            if foreground_weight == 0:
+                break
+            background_sum += threshold * count
+            background_mean = background_sum / background_weight
+            foreground_mean = (weighted_sum - background_sum) / foreground_weight
+            variance = background_weight * foreground_weight * (background_mean - foreground_mean) ** 2
+            if variance > best_variance:
+                best_variance = variance
+                best_threshold = threshold
+        return best_threshold
 
     # ------------------------------------------------------------------
     # Steps  (PGS — dark background)

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ocr-ai-studio"
-version = "2.0.0a2"
+version = "1.0.0"
 description = "Professional bitmap subtitle OCR for LM Studio, Ollama, and Unsloth"
 requires-python = ">=3.10"
 dependencies = [
@@ -12,6 +12,7 @@ dependencies = [
     "openai>=2.48.0",
     "httpx>=0.28.1",
     "PySide6>=6.8",
+    "av>=16.0,<19",
 ]
 
 [project.optional-dependencies]

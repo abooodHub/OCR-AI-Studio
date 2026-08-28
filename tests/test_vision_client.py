@@ -47,3 +47,24 @@ class VisionClientTests(TestCase):
             max_retries=1,
         )
         self.assertEqual(client.ocr(b"image"), "")
+
+    @patch("ocr_ai_studio.ai.vision_client.OpenAI")
+    def test_language_metadata_is_passed_as_recognition_hint_only(self, openai_mock) -> None:
+        sdk_client = openai_mock.return_value
+        sdk_client.chat.completions.create.return_value = SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content="مرحبا"))]
+        )
+        client = VisionClient(
+            EngineKind.LM_STUDIO,
+            "http://127.0.0.1:1234/v1",
+            "vision-model",
+            max_retries=1,
+            language_hint="ara",
+        )
+
+        client.ocr(b"image")
+
+        messages = sdk_client.chat.completions.create.call_args.kwargs["messages"]
+        instruction = messages[1]["content"][1]["text"]
+        self.assertIn("ara", instruction)
+        self.assertIn("never to translate", instruction)

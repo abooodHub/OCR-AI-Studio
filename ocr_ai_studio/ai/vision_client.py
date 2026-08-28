@@ -14,6 +14,8 @@ from ocr_ai_studio.domain.models import EngineKind
 SYSTEM_PROMPT = (
     "You are a precise subtitle OCR engine. Read only the subtitle visible in the image. "
     "Return the exact text, preserving line breaks. Do not translate, explain, quote, or use markdown. "
+    "For Arabic, Persian, Hebrew, and other right-to-left scripts, return normal Unicode logical "
+    "reading order; never reverse words or emit visual glyph order. "
     "If no subtitle is readable, return exactly EMPTY."
 )
 EMPTY_RESPONSES = {"EMPTY", "[EMPTY]", "(EMPTY)"}
@@ -21,6 +23,10 @@ EMPTY_RESPONSES = {"EMPTY", "[EMPTY]", "(EMPTY)"}
 
 class OCRRequestError(RuntimeError):
     """An OCR request failed and must never be interpreted as an empty subtitle."""
+
+
+class OCRConnectionError(OCRRequestError):
+    """The local inference server is temporarily unavailable; the job can resume later."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,10 +47,12 @@ class VisionClient:
         timeout_seconds: int = 90,
         max_retries: int = 3,
         api_key: str = "",
+        language_hint: str = "",
     ) -> None:
         self.engine = engine
         self.base_url = base_url.rstrip("/")
         self.model = model.strip()
+        self.language_hint = language_hint.strip()
         self.max_retries = max_retries
         resolved_api_key = self._resolve_api_key(engine, api_key)
         self.client = OpenAI(
@@ -105,7 +113,7 @@ class VisionClient:
                         "type": "image_url",
                         "image_url": {"url": f"data:image/jpeg;base64,{encoded}", "detail": "high"},
                     },
-                    {"type": "text", "text": "Extract the subtitle text."},
+                    {"type": "text", "text": self._ocr_instruction()},
                 ],
             },
         ]
@@ -145,7 +153,18 @@ class VisionClient:
                 raise OCRRequestError(f"AI server rejected the image request: {exc}") from exc
             except (AttributeError, IndexError, TypeError) as exc:
                 raise OCRRequestError("AI server returned an invalid response") from exc
-        raise OCRRequestError(f"OCR request failed after {self.max_retries} attempts: {last_error}")
+        raise OCRConnectionError(
+            f"OCR server unavailable after {self.max_retries} attempts: {last_error}"
+        )
+
+    def _ocr_instruction(self) -> str:
+        if not self.language_hint or self.language_hint.casefold() in {"und", "unknown"}:
+            return "Extract the subtitle text exactly as displayed."
+        return (
+            "Extract the subtitle text exactly as displayed. "
+            f"The container language metadata is {self.language_hint}; use it only to recognize the script, "
+            "never to translate or rewrite the subtitle."
+        )
 
     @staticmethod
     def _normalize_content(content: object) -> str:

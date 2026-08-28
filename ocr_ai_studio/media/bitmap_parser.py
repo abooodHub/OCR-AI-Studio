@@ -120,6 +120,10 @@ class MediaEngine:
         parser = PGSParser(sup_path)
         yield from parser.parse()
 
+    def count_sup_frames(self, sup_path: str) -> int:
+        """Count PGS subtitle start events without rendering their images."""
+        return PGSParser(sup_path).count_events()
+
     # ------------------------------------------------------------------
     # .sub file support
     # ------------------------------------------------------------------
@@ -204,6 +208,14 @@ class PGSParser:
         segments = self._read_segments(raw)
         display_sets = self._group_display_sets(segments)
         yield from self._render_all(display_sets)
+
+    def count_events(self) -> int:
+        with open(self.sup_path, "rb") as fh:
+            segments = self._read_segments(fh.read())
+        # Counting raw PCS composition records is not equivalent to counting renderable
+        # subtitles: some streams contain an orphan/clear composition with no complete
+        # palette or object. Count the exact frames the renderer can yield instead.
+        return sum(1 for _frame in self._render_all(self._group_display_sets(segments)))
 
     # ------------------------------------------------------------------
     # 1. Read raw segments

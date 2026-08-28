@@ -22,6 +22,14 @@ class JobStatus(str, Enum):
     FAILED = "failed"
 
 
+class QueueStatus(str, Enum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
 @dataclass(frozen=True, slots=True)
 class StreamInfo:
     ordinal: int
@@ -33,7 +41,10 @@ class StreamInfo:
     @property
     def is_bitmap(self) -> bool:
         codec = self.codec.lower()
-        return any(token in codec for token in ("pgs", "hdmv", "dvd_subtitle", "vobsub"))
+        return any(
+            token in codec
+            for token in ("pgs", "hdmv", "dvd_subtitle", "vobsub", "bdn", "dvb_subtitle", "xsub")
+        )
 
     @property
     def is_text(self) -> bool:
@@ -58,6 +69,44 @@ class SubtitleCue:
 
 
 @dataclass(frozen=True, slots=True)
+class ReviewFrame:
+    project_id: str
+    frame_index: int
+    start_ms: int
+    end_ms: int
+    status: str
+    text: str = ""
+    error: str = ""
+    image_jpeg: bytes | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class JobQualityReport:
+    project_id: str
+    total_frames: int
+    recognized_frames: int
+    recognized_lines: int
+    empty_frames: int
+    failed_frames: int
+    overlaps: int
+    suspicious_short: int
+    suspicious_long: int
+    adjacent_duplicates: int
+    first_start_ms: int | None
+    last_end_ms: int | None
+    timing_status: str = "pending"
+
+    @property
+    def score(self) -> int:
+        if self.total_frames <= 0:
+            return 0
+        failure_penalty = round(self.failed_frames * 60 / self.total_frames)
+        structural_penalty = self.overlaps * 5
+        duration_penalty = min(15, self.suspicious_short + self.suspicious_long)
+        return max(0, min(100, 100 - failure_penalty - structural_penalty - duration_penalty))
+
+
+@dataclass(frozen=True, slots=True)
 class JobRequest:
     input_path: Path
     output_path: Path
@@ -77,3 +126,14 @@ class JobResult:
     failed_frames: int = 0
     output_path: Path | None = None
     message: str = ""
+    quality: JobQualityReport | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class QueuedJob:
+    id: int
+    request: JobRequest
+    status: QueueStatus
+    position: int
+    project_id: str = ""
+    last_error: str = ""

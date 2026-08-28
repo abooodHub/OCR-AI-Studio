@@ -1,3 +1,3 @@
-"""OCR-AI Studio V2 package."""
+"""OCR-AI Studio package."""
 
-__version__ = "2.0.0-alpha.2"
+__version__ = "1.0.0"
